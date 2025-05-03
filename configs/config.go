@@ -5,11 +5,11 @@ import (
 )
 
 type DB struct {
-	Host     string `mapstructure:"DB_HOST"`
-	Port     string `mapstructure:"DB_PORT"`
-	Username string `mapstructure:"DB_USERNAME"`
-	Password string `mapstructure:"DB_PASSWORD"`
-	Name     string `mapstructure:"DB_Name"`
+	Host     string `mapstructure:"HOST"`
+	Port     string `mapstructure:"PORT"`
+	Username string `mapstructure:"USERNAME"`
+	Password string `mapstructure:"PASSWORD"`
+	Database string `mapstructure:"DATABASE"`
 }
 
 type Config struct {
@@ -20,9 +20,9 @@ type Config struct {
 func LoadConfig() (*Config, error) {
 	var config *Config
 
-	viper.SetConfigName("config")
+	viper.SetConfigName(".config")
 	viper.SetConfigType("json")
-	viper.AddConfigPath(".config")
+	viper.AddConfigPath("./configs/")
 
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -34,7 +34,7 @@ func LoadConfig() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
- 
+
 	/*
 		ler config do ssm
 		configurar logger
