@@ -1,0 +1,22 @@
+{
+  "main": {
+    "database": "db_name",
+    "host": {
+      "read": [
+        "localhost-ro-1",
+        "localhost-ro-2"
+      ],
+      "write": "localhost"
+    },
+    "port": "3306",
+    "username": "user",
+    "password": "12345678"
+  },
+  "users ": {
+    "database": "db_name",
+    "host": "localhost-ro",
+    "port": "3306",
+    "username": "user",
+    "password": "12345678"
+  }
+}
