@@ -12,7 +12,6 @@ import (
 )
 
 /*
-	TODO: setup config load from AWS SSM
 	TODO: setup logger with kinesis handler
 */
 
