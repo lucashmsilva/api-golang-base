@@ -14,7 +14,11 @@
   },
   "users ": {
     "database": "db_name",
-    "host": "localhost-ro",
+    "host": {
+      "read": [
+        "localhost-ro"
+      ]
+    },
     "port": "3306",
     "username": "user",
     "password": "12345678"
