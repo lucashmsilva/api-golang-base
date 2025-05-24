@@ -48,21 +48,21 @@ func LoadConfig() (*Config, error) {
 	paramPaths := buildParamPaths(env, appName)
 
 	switch env {
-	case "TESTING":
-	case "PRODUCTION":
+	case "testing":
+	case "production":
 		loadedParams, err = loadSSMParams(paramPaths)
 		if err != nil {
 			return nil, err
 		}
 
-	case "DEVELOPMENT":
+	case "development":
 		loadedParams, err = loadLocalParams(paramPaths)
 		if err != nil {
 			return nil, err
 		}
 
 	default:
-		return nil, errors.New("env must be one of [DEVELOPMENT, TESTING, PRODUCTION]")
+		return nil, errors.New("env must be one of [development, testing, production]")
 	}
 
 	configJson := loadedParams[paramPaths["CONFIG_PATH"]]
