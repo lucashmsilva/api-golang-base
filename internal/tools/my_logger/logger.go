@@ -76,6 +76,80 @@ func NewLogger(opts *LoggerOptions) (*Logger, error) {
 	}, nil
 }
 
+func (l *Logger) Trace(msg string, attrs ...any) {
+	l.Log(context.TODO(), "trace", msg, attrs...)
+}
+
+func (l *Logger) Debug(msg string, attrs ...any) {
+	l.Log(context.TODO(), "debug", msg, attrs...)
+}
+
+func (l *Logger) Info(msg string, attrs ...any) {
+	l.Log(context.TODO(), "info", msg, attrs...)
+}
+
+func (l *Logger) Warn(msg string, attrs ...any) {
+	l.Log(context.TODO(), "warn", msg, attrs...)
+}
+
+func (l *Logger) Error(msg string, attrs ...any) {
+	l.Log(context.TODO(), "error", msg, attrs...)
+}
+
+func (l *Logger) Critical(msg string, attrs ...any) {
+	l.Log(context.TODO(), "critical", msg, attrs...)
+}
+
+func (l *Logger) Fatal(msg string, attrs ...any) {
+	l.Log(context.TODO(), "fatal", msg, attrs...)
+}
+
+func (l *Logger) Log(ctx context.Context, level string, msg string, attrs ...any) error {
+	var slogLevel slog.Level
+	slogLevel, err := getSlogLevel(level)
+	if err != nil {
+		return err
+	}
+
+	if len(attrs) == 1 {
+		if serializedAttr, ok := l.options.Serializer.Serialize(attrs[0]); ok {
+			attrs[0] = serializedAttr
+		}
+	}
+
+	l.contextLogger.Log(ctx, slogLevel, msg, attrs...)
+
+	return nil
+}
+
+func (l *Logger) AddLogContext(attrs ...any) {
+	l.contextLogger = l.contextLogger.With(attrs...)
+}
+
+func (l *Logger) ClearLogContext() {
+	l.contextLogger = l.logger
+}
+
+func (l *Logger) GetBaseLogger() *slog.Logger {
+	loggerCopy := *l.logger
+	return &loggerCopy
+}
+
+func BuildAttrsFromMap(appAttrs map[string]any) []any {
+	attrs := make([]any, 0, len(appAttrs))
+
+	for k, v := range appAttrs {
+		slogAttr := slog.Attr{
+			Key:   k,
+			Value: slog.AnyValue(v),
+		}
+
+		attrs = append(attrs, slogAttr)
+	}
+
+	return attrs
+}
+
 func setupBaseAttrs(appName string, version string, defaultAttrs map[string]any) []any {
 	var baseAttrs []any
 
@@ -83,7 +157,7 @@ func setupBaseAttrs(appName string, version string, defaultAttrs map[string]any)
 	defaultAttrs["version"] = version
 	defaultAttrs["hostname"], _ = os.Hostname()
 
-	baseAttrs = BuildLogAttrsFromMap(defaultAttrs)
+	baseAttrs = BuildAttrsFromMap(defaultAttrs)
 
 	return baseAttrs
 }
