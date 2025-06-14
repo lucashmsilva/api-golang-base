@@ -9,8 +9,7 @@ import (
 
 	"github.com/bermr/api-golang-base/internal/config"
 	"github.com/bermr/api-golang-base/internal/infra/server"
-	"github.com/bermr/api-golang-base/internal/infra/server/gn_logger"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 )
 
 /*
@@ -27,16 +26,7 @@ func main() {
 		slog.Error(fmt.Sprintf("Error loading config: %v", err))
 		return
 	}
-	router := mux.NewRouter()
-
-	router.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
-		if isShuttingDown.Load() {
-			http.Error(w, "Server shutting down", http.StatusServiceUnavailable)
-			return
-		}
-
-		fmt.Fprintln(w, "OK")
-	})
+	router := chi.NewRouter()
 
 	srv := server.New(config, router)
 	go srv.Start()
