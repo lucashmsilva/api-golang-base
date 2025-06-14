@@ -1,4 +1,4 @@
-package gn_logger
+package my_logger
 
 import (
 	"context"
@@ -13,48 +13,69 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/firehose/types"
 )
 
+// Default buffer params
 const (
-	// Firehose limits
-	MAX_LOG_BYTE_LENGTH     = 1000 * 1024     // 1000 KB
-	MAX_RECORDS_BYTE_LENGTH = 4 * 1024 * 1024 // 4 MB
+	// Firehose hard limits
+	max_log_byte_length     = 1000 * 1024     // 1000 KB
+	max_records_byte_length = 4 * 1024 * 1024 // 4 MB
 
 	// Customizable via options
-	MAX_RECORD_BATCH_SIZE    = 500
-	DEFAULT_WATCHER_MS_DELAY = 1000
+	max_record_batch_size    = 500
+	default_watcher_ms_delay = 1000
 )
 
 type FirehoseLogStreamOptions struct {
-	StreamName   string
+	// Firehose stream name as configured in AWS
+	StreamName string
+
+	// Record buffer size
 	MaxBatchSize *int
+
+	// Time between automatic record buffer flushes
 	WatcherDelay *int
+
+	// Instead of sending records trough the AWS API, print them to stdout
+	Debug bool
 }
 
 type FirehoseLogStream struct {
 	options        FirehoseLogStreamOptions
 	recordsBuff    []types.Record
-	firehoseClient FirehoseClient
+	firehoseClient firehoseClient
 	ticker         *time.Ticker
-	recordStream   chan types.Record
 	mu             sync.Mutex
 }
 
 // Interface to allow mocking of the AWS Firehose API
-type FirehoseClient interface {
+type firehoseClient interface {
 	PutRecordBatch(ctx context.Context, input *firehose.PutRecordBatchInput, optFns ...func(*firehose.Options)) (*firehose.PutRecordBatchOutput, error)
+}
+
+type firehoseDebugClient struct {
+	_ aws.Config
+}
+
+func (f *firehoseDebugClient) PutRecordBatch(ctx context.Context, input *firehose.PutRecordBatchInput, _ ...func(*firehose.Options)) (*firehose.PutRecordBatchOutput, error) {
+	for _, v := range input.Records {
+		fmt.Print(string(v.Data))
+	}
+
+	return &firehose.PutRecordBatchOutput{FailedPutCount: aws.Int32(0)}, nil
 }
 
 func NewFirehoseLogStream(opts FirehoseLogStreamOptions) (*FirehoseLogStream, error) {
 	var watcherDelay int
 	var cfg aws.Config
+	var firehoseClient firehoseClient
 
 	if opts.WatcherDelay == nil {
-		watcherDelay = DEFAULT_WATCHER_MS_DELAY
+		watcherDelay = default_watcher_ms_delay
 	} else {
 		watcherDelay = *opts.WatcherDelay
 	}
 
 	if opts.MaxBatchSize == nil {
-		defaultMaxBatchSize := MAX_RECORD_BATCH_SIZE
+		defaultMaxBatchSize := max_record_batch_size
 		opts.MaxBatchSize = &defaultMaxBatchSize
 	}
 
@@ -63,27 +84,43 @@ func NewFirehoseLogStream(opts FirehoseLogStreamOptions) (*FirehoseLogStream, er
 		return nil, err
 	}
 
+	firehoseClient = firehose.NewFromConfig(cfg)
+	if opts.Debug {
+		firehoseClient = &firehoseDebugClient{cfg}
+	}
+
 	firehoseStream := &FirehoseLogStream{
 		options:        opts,
 		recordsBuff:    []types.Record{},
-		firehoseClient: firehose.NewFromConfig(cfg),
+		firehoseClient: firehoseClient,
 		ticker:         time.NewTicker(time.Millisecond * time.Duration(watcherDelay)),
-		recordStream:   make(chan types.Record, 1),
 	}
 
-	go firehoseStream.listenRecordStream()
-	go firehoseStream.startWatcher()
+	go func() {
+		for range firehoseStream.ticker.C {
+			go firehoseStream.send()
+		}
+	}()
 
 	return firehoseStream, nil
 }
 
 func (f *FirehoseLogStream) Write(logBytes []byte) (n int, err error) {
-	if len(logBytes) > MAX_LOG_BYTE_LENGTH {
-		fmt.Printf("log length exceeds %v B.\n", MAX_LOG_BYTE_LENGTH)
+	if len(logBytes) > max_log_byte_length {
+		fmt.Printf("log length exceeds %v B.\n", max_log_byte_length)
 		return len(logBytes), nil
 	}
 
-	f.recordStream <- types.Record{Data: slices.Clone(logBytes)}
+	go func(r types.Record) {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+
+		f.recordsBuff = append(f.recordsBuff, r)
+		if len(f.recordsBuff) >= *f.options.MaxBatchSize {
+			go f.send()
+		}
+
+	}(types.Record{Data: slices.Clone(logBytes)})
 
 	return len(logBytes), nil
 }
@@ -93,35 +130,12 @@ func (f *FirehoseLogStream) Close() error {
 	defer f.mu.Unlock()
 
 	f.ticker.Stop()
-	close(f.recordStream)
 
 	for len(f.recordsBuff) > 0 {
 		f.send()
 	}
 
 	return nil
-}
-
-// Process writes as with a buffered channel of log records that will be sent.
-// This way (most of the time) avoids needing to sync at the io.Write level,
-// due to the record buffer being appended at every write.
-func (f *FirehoseLogStream) listenRecordStream() {
-	for r := range f.recordStream {
-		f.mu.Lock()
-
-		f.recordsBuff = append(f.recordsBuff, r)
-		if len(f.recordsBuff) >= *f.options.MaxBatchSize {
-			go f.send()
-		}
-
-		f.mu.Unlock()
-	}
-}
-
-func (f *FirehoseLogStream) startWatcher() {
-	for range f.ticker.C {
-		go f.send()
-	}
 }
 
 func (f *FirehoseLogStream) send() int {
@@ -149,7 +163,7 @@ func (f *FirehoseLogStream) send() int {
 
 	// If the list of records to be sent has a byte length bigger than the limit,
 	// pop the last record and add it to the front of the buffer. Repeat until the list fits.
-	for recordsByteLength > MAX_RECORDS_BYTE_LENGTH {
+	for recordsByteLength > max_records_byte_length {
 		if len(records) == 0 {
 			return 0
 		}
