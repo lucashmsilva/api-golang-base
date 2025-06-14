@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"sync"
 )
 
 type LoggerOptions struct {
@@ -21,6 +22,7 @@ type Logger struct {
 	logger        *slog.Logger
 	contextLogger *slog.Logger
 	options       *LoggerOptions
+	ctxFence      sync.Mutex
 }
 
 const (
@@ -123,10 +125,16 @@ func (l *Logger) Log(ctx context.Context, level string, msg string, attrs ...any
 }
 
 func (l *Logger) AddLogContext(attrs ...any) {
+	l.ctxFence.Lock()
+	defer l.ctxFence.Unlock()
+
 	l.contextLogger = l.contextLogger.With(attrs...)
 }
 
 func (l *Logger) ClearLogContext() {
+	l.ctxFence.Lock()
+	defer l.ctxFence.Unlock()
+
 	l.contextLogger = l.logger
 }
 
