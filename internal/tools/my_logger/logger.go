@@ -1,4 +1,4 @@
-package gn_logger
+package my_logger
 
 import (
 	"context"
@@ -14,11 +14,13 @@ type LoggerOptions struct {
 	Level        string
 	Output       io.Writer
 	DefaultAttrs map[string]any
+	Serializer   Serializer
 }
 
 type Logger struct {
 	logger        *slog.Logger
 	contextLogger *slog.Logger
+	options       *LoggerOptions
 }
 
 const (
@@ -33,7 +35,7 @@ var levelNames = map[slog.Leveler]string{
 	levelCritical: "CRITICAL",
 }
 
-func NewLogger(opts LoggerOptions) (*Logger, error) {
+func NewLogger(opts *LoggerOptions) (*Logger, error) {
 	var baseAttrs []any
 	var level slog.Level
 	var handlerOpts *slog.HandlerOptions
@@ -51,6 +53,10 @@ func NewLogger(opts LoggerOptions) (*Logger, error) {
 		opts.DefaultAttrs = make(map[string]any)
 	}
 
+	if opts.Serializer == nil {
+		opts.Serializer = &DefaultSerializers{}
+	}
+
 	baseAttrs = setupBaseAttrs(opts.AppName, opts.Version, opts.DefaultAttrs)
 
 	handlerOpts = &slog.HandlerOptions{
@@ -66,6 +72,7 @@ func NewLogger(opts LoggerOptions) (*Logger, error) {
 	return &Logger{
 		logger:        logger,
 		contextLogger: logger,
+		options:       opts,
 	}, nil
 }
 
@@ -113,40 +120,4 @@ func replaceCustomLevelNames(groups []string, a slog.Attr) slog.Attr {
 	}
 
 	return a
-}
-
-func BuildLogAttrsFromMap(appAttrs map[string]any) []any {
-	attrs := make([]any, 0, len(appAttrs))
-
-	for k, v := range appAttrs {
-		slogAttr := slog.Attr{
-			Key:   k,
-			Value: slog.AnyValue(v),
-		}
-
-		attrs = append(attrs, slogAttr)
-	}
-
-	return attrs
-}
-
-func (l *Logger) Log(ctx context.Context, level string, msg string, attrs ...any) error {
-	var slogLevel slog.Level
-
-	slogLevel, err := getSlogLevel(level)
-	if err != nil {
-		return err
-	}
-
-	l.contextLogger.Log(ctx, slogLevel, msg, attrs...)
-
-	return nil
-}
-
-func (l *Logger) AddLogContext(attrs ...any) {
-	l.contextLogger = l.contextLogger.With(attrs...)
-}
-
-func (l *Logger) ClearLogContext() {
-	l.contextLogger = l.logger
 }
