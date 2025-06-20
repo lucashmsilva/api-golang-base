@@ -126,9 +126,6 @@ func (f *FirehoseLogStream) Write(logBytes []byte) (n int, err error) {
 }
 
 func (f *FirehoseLogStream) Close() error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
 	f.ticker.Stop()
 
 	for len(f.recordsBuff) > 0 {
