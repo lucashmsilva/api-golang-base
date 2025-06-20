@@ -6,11 +6,11 @@ import (
 	"os"
 
 	"github.com/bermr/api-golang-base/internal/config"
-	"github.com/bermr/api-golang-base/internal/tools/my_logger"
+	"github.com/bermr/api-golang-base/pkg/yall"
 )
 
-func GetLogger(cfg *config.Config, output io.Writer) *my_logger.Logger {
-	logger, err := my_logger.NewLogger(&my_logger.LoggerOptions{
+func GetLogger(cfg *config.Config, output io.Writer) *yall.Logger {
+	logger, err := yall.NewLogger(&yall.LoggerOptions{
 		AppName: cfg.AppName,
 		Version: "1.0.1",
 		Level:   cfg.LogLevel,
@@ -30,7 +30,7 @@ func OutputStream(cfg *config.Config) io.Writer {
 		return os.Stdout
 	}
 
-	firehoseLogStream, err := my_logger.NewFirehoseLogStream(my_logger.FirehoseLogStreamOptions{
+	firehoseLogStream, err := yall.NewFirehoseLogStream(&yall.FirehoseLogStreamOptions{
 		StreamName: cfg.AppName,
 	})
 	if err != nil {

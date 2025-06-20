@@ -1,4 +1,4 @@
-package my_logger
+package yall
 
 import (
 	"context"
@@ -34,12 +34,12 @@ type FirehoseLogStreamOptions struct {
 	// Time between automatic record buffer flushes
 	WatcherDelay *int
 
-	// Instead of sending records trough the AWS API, print them to stdout
+	// Instead of sending records through the AWS API, print them to stdout
 	Debug bool
 }
 
 type FirehoseLogStream struct {
-	options        FirehoseLogStreamOptions
+	options        *FirehoseLogStreamOptions
 	recordsBuff    []types.Record
 	firehoseClient firehoseClient
 	ticker         *time.Ticker
@@ -63,7 +63,7 @@ func (f *firehoseDebugClient) PutRecordBatch(ctx context.Context, input *firehos
 	return &firehose.PutRecordBatchOutput{FailedPutCount: aws.Int32(0)}, nil
 }
 
-func NewFirehoseLogStream(opts FirehoseLogStreamOptions) (*FirehoseLogStream, error) {
+func NewFirehoseLogStream(opts *FirehoseLogStreamOptions) (*FirehoseLogStream, error) {
 	var watcherDelay int
 	var cfg aws.Config
 	var firehoseClient firehoseClient

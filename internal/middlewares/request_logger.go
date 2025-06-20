@@ -8,8 +8,8 @@ import (
 
 	"github.com/bermr/api-golang-base/internal/config"
 	"github.com/bermr/api-golang-base/internal/tools/logger"
-	"github.com/bermr/api-golang-base/internal/tools/my_logger"
 	"github.com/bermr/api-golang-base/internal/tools/util"
+	"github.com/bermr/api-golang-base/pkg/yall"
 	"github.com/google/uuid"
 )
 
@@ -47,7 +47,7 @@ func (lm RequestLoggerMiddleware) HandleRequest(next http.Handler) http.Handler 
 
 		loggerContext := context.WithValue(r.Context(), util.CtxKey("_reqLogger"), log)
 		context.AfterFunc(loggerContext, func() {
-			resLogData := &my_logger.HttpResponseLogData{
+			resLogData := &yall.HttpResponseLogData{
 				Time:       time.Since(reqStartedAt),
 				StatusCode: lrw.statusCode,
 				Path:       r.URL.Path,

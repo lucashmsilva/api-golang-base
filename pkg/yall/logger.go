@@ -1,4 +1,4 @@
-package my_logger
+package yall
 
 import (
 	"context"
@@ -10,12 +10,25 @@ import (
 )
 
 type LoggerOptions struct {
-	AppName      string
-	Version      string
-	Level        string
-	Output       io.Writer
+	// Application name. Default attr that will be included in all log records.
+	AppName string
+
+	// Application version. Default attr that will be included in all log records.
+	Version string
+
+	// Minimal log level. Logs with a lesser level will not be sent to the output stream.
+	Level string
+
+	// Output stream where the records will be sent.
+	Output io.Writer
+
+	// A map of attrs that will be included in in all log records along with app name, version and hostname. Optional
 	DefaultAttrs map[string]any
-	Serializer   Serializer
+
+	// Predefined serialization of some structs and interfaces. Usually, a struct is serialized as a slog.Group.
+	// When sending serializable structs as attrs, send only a single attr. When there is a single attr and it is serializable,
+	// Serialize(attr) is called and the resulting slog.Attr is logged
+	Serializer Serializer
 }
 
 type Logger struct {
@@ -78,34 +91,36 @@ func NewLogger(opts *LoggerOptions) (*Logger, error) {
 	}, nil
 }
 
-func (l *Logger) Trace(msg string, attrs ...any) {
-	l.Log(context.TODO(), "trace", msg, attrs...)
-}
-
-func (l *Logger) Debug(msg string, attrs ...any) {
-	l.Log(context.TODO(), "debug", msg, attrs...)
-}
-
+// Set of methods that generates a log record with the appropriate level.
+// If LoggerOptions.Serializer was set and there is only a single attr (len(attrs) == 1) and it is serializable,
+// the result of Serialize(attr), an slog.Attr, is included in the record.
+// The context logger is always used.
 func (l *Logger) Info(msg string, attrs ...any) {
 	l.Log(context.TODO(), "info", msg, attrs...)
 }
-
+func (l *Logger) Trace(msg string, attrs ...any) {
+	l.Log(context.TODO(), "trace", msg, attrs...)
+}
+func (l *Logger) Debug(msg string, attrs ...any) {
+	l.Log(context.TODO(), "debug", msg, attrs...)
+}
 func (l *Logger) Warn(msg string, attrs ...any) {
 	l.Log(context.TODO(), "warn", msg, attrs...)
 }
-
 func (l *Logger) Error(msg string, attrs ...any) {
 	l.Log(context.TODO(), "error", msg, attrs...)
 }
-
 func (l *Logger) Critical(msg string, attrs ...any) {
 	l.Log(context.TODO(), "critical", msg, attrs...)
 }
-
 func (l *Logger) Fatal(msg string, attrs ...any) {
 	l.Log(context.TODO(), "fatal", msg, attrs...)
 }
 
+// Logs with the provided [level]. As of the current version, this lib does nothing with the passed [context]
+// If LoggerOptions.Serializer was set and there is only a single attr (len(attrs) == 1) and it is serializable (),
+// Serialize(attr) is called and the resulting slog.Attr is logged.
+// The context logger is always used.
 func (l *Logger) Log(ctx context.Context, level string, msg string, attrs ...any) error {
 	var slogLevel slog.Level
 	slogLevel, err := getSlogLevel(level)
@@ -124,6 +139,9 @@ func (l *Logger) Log(ctx context.Context, level string, msg string, attrs ...any
 	return nil
 }
 
+// Creates a new logging context with the provided attrs. It uses the underlying base slog.Logger
+// to generate a new logger through a With() call. The previous base slog.Logger (with the default and base attrs) reference is preserved.
+// This call is thread safe.
 func (l *Logger) AddLogContext(attrs ...any) {
 	l.ctxFence.Lock()
 	defer l.ctxFence.Unlock()
@@ -131,6 +149,7 @@ func (l *Logger) AddLogContext(attrs ...any) {
 	l.contextLogger = l.contextLogger.With(attrs...)
 }
 
+// Clears the context logger reverting it to the previous underlying base slog.Logger. This call is thread safe
 func (l *Logger) ClearLogContext() {
 	l.ctxFence.Lock()
 	defer l.ctxFence.Unlock()
@@ -138,11 +157,14 @@ func (l *Logger) ClearLogContext() {
 	l.contextLogger = l.logger
 }
 
+// Returns a copy of the clean base logger instance
 func (l *Logger) GetBaseLogger() *slog.Logger {
 	loggerCopy := *l.logger
 	return &loggerCopy
 }
 
+// Returns a slice of slog.Attr, generated from the map. In in its current form,
+// there is no support for nested maps.
 func BuildAttrsFromMap(appAttrs map[string]any) []any {
 	attrs := make([]any, 0, len(appAttrs))
 
@@ -191,7 +213,7 @@ func getSlogLevel(optLevel string) (slog.Level, error) {
 	}
 }
 
-func replaceCustomLevelNames(groups []string, a slog.Attr) slog.Attr {
+func replaceCustomLevelNames(_ []string, a slog.Attr) slog.Attr {
 	if a.Key == slog.LevelKey {
 		level := a.Value.Any().(slog.Level)
 		levelLabel, exists := levelNames[level]
