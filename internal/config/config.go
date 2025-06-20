@@ -32,7 +32,8 @@ type Config struct {
 	AppName  string
 	Env      string
 	Timezone string
-	Port     int `json:"port"`
+	Port     int    `json:"port"`
+	LogLevel string `json:"log_level"`
 	Db       Db
 	// define the rest of the config as needed
 }

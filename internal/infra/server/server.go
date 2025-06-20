@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/bermr/api-golang-base/internal/config"
-	"github.com/gorilla/mux"
+	"github.com/go-chi/chi/v5"
 )
 
 type Server struct {
@@ -17,7 +17,7 @@ type Server struct {
 	config         *config.Config
 }
 
-func New(c *config.Config, r *mux.Router) *Server {
+func New(c *config.Config, r *chi.Mux) *Server {
 	ongoingCtx, requestStopper := context.WithCancel(context.Background())
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%v", c.Port),
