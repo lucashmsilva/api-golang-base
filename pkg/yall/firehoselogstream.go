@@ -25,16 +25,16 @@ const (
 )
 
 type FirehoseLogStreamOptions struct {
-	// Firehose stream name as configured in AWS
+	// Firehose stream name as configured in AWS. Required.
 	StreamName string
 
-	// Record buffer size
+	// Record buffer size. Optional and defaults to 500 records.
 	MaxBatchSize *int
 
-	// Time between automatic record buffer flushes
+	// Time between automatic record buffer flushes. Optional and defaults to 1 second.
 	WatcherDelay *int
 
-	// Instead of sending records through the AWS API, print them to stdout
+	// Instead of sending records through the AWS API, print them to stdout.
 	Debug bool
 }
 
@@ -63,6 +63,9 @@ func (f *firehoseDebugClient) PutRecordBatch(ctx context.Context, input *firehos
 	return &firehose.PutRecordBatchOutput{FailedPutCount: aws.Int32(0)}, nil
 }
 
+// Creates a new FirehoseLogStream. If opts.Debug == false, instantiate a new AWS Firehose client. Currently
+// only the default AWS credentials loading is supported. Also, starts the ticker that flushes the buffer even
+// if it never reaches opts.MaxBatchSize (or the 500 default) records.
 func NewFirehoseLogStream(opts *FirehoseLogStreamOptions) (*FirehoseLogStream, error) {
 	var watcherDelay int
 	var cfg aws.Config
@@ -105,6 +108,7 @@ func NewFirehoseLogStream(opts *FirehoseLogStreamOptions) (*FirehoseLogStream, e
 	return firehoseStream, nil
 }
 
+// Asynchronously write to the underling stream
 func (f *FirehoseLogStream) Write(logBytes []byte) (n int, err error) {
 	if len(logBytes) > max_log_byte_length {
 		fmt.Printf("log length exceeds %v B.\n", max_log_byte_length)

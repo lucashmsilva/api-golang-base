@@ -7,17 +7,21 @@ import (
 )
 
 type Serializer interface {
+	// Takes a concrete struct, checks is it serializable and, if it is, returns a slog.Attr
+	// with the parsing result along with true, otherwise, returns a zero slog.Attr and false
 	Serialize(any) (slog.Attr, bool)
 }
 
 type DefaultSerializers struct{}
 
+// Helper struct to log basic information about a HTTP response
 type HttpResponseLogData struct {
 	Time       time.Duration
 	StatusCode int
 	Path       string
 }
 
+// Parses error, *http.Request and yall.*HttpResponseLogData to slog.Group
 func (d *DefaultSerializers) Serialize(attr any) (slog.Attr, bool) {
 	switch a := attr.(type) {
 	case error:
@@ -53,4 +57,9 @@ func serializeHttpResponse(r *HttpResponseLogData) slog.Attr {
 		slog.Any("path", r.Path),
 		slog.Any("time", r.Time.String()),
 	)
+}
+
+// Returns a copy of the DefaultSerializers implementation
+func GetDefaultSerializer() Serializer {
+	return &DefaultSerializers{}
 }

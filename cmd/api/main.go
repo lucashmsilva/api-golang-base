@@ -16,10 +16,10 @@ import (
 )
 
 /*
-	TODO: extract the logging module as its own lib
 	TODO: implement unit tests for the logging module
 	TODO: learn and implement dependency injection
 	TODO: setup the logger as an injected dependency
+	TODO: create a Docker build pipeline for the dev environment
 */
 
 func main() {

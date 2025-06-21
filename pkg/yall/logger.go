@@ -22,12 +22,14 @@ type LoggerOptions struct {
 	// Output stream where the records will be sent.
 	Output io.Writer
 
-	// A map of attrs that will be included in in all log records along with app name, version and hostname. Optional
+	// A Optional map of attrs that will be included in in all log records along with app name, version and hostname.
+	// In it's current version only a flat map (i.e. no nesting) is supported.
 	DefaultAttrs map[string]any
 
 	// Predefined serialization of some structs and interfaces. Usually, a struct is serialized as a slog.Group.
 	// When sending serializable structs as attrs, send only a single attr. When there is a single attr and it is serializable,
-	// Serialize(attr) is called and the resulting slog.Attr is logged
+	// opts.Serializer.Serialize(attr) is called and the resulting slog.Attr is logged.
+	// The default Serializer already parses error, *http.Request and yall.*HttpResponseLogData.
 	Serializer Serializer
 }
 
@@ -95,14 +97,14 @@ func NewLogger(opts *LoggerOptions) (*Logger, error) {
 // If LoggerOptions.Serializer was set and there is only a single attr (len(attrs) == 1) and it is serializable,
 // the result of Serialize(attr), an slog.Attr, is included in the record.
 // The context logger is always used.
-func (l *Logger) Info(msg string, attrs ...any) {
-	l.Log(context.TODO(), "info", msg, attrs...)
-}
 func (l *Logger) Trace(msg string, attrs ...any) {
 	l.Log(context.TODO(), "trace", msg, attrs...)
 }
 func (l *Logger) Debug(msg string, attrs ...any) {
 	l.Log(context.TODO(), "debug", msg, attrs...)
+}
+func (l *Logger) Info(msg string, attrs ...any) {
+	l.Log(context.TODO(), "info", msg, attrs...)
 }
 func (l *Logger) Warn(msg string, attrs ...any) {
 	l.Log(context.TODO(), "warn", msg, attrs...)
@@ -110,11 +112,11 @@ func (l *Logger) Warn(msg string, attrs ...any) {
 func (l *Logger) Error(msg string, attrs ...any) {
 	l.Log(context.TODO(), "error", msg, attrs...)
 }
-func (l *Logger) Critical(msg string, attrs ...any) {
-	l.Log(context.TODO(), "critical", msg, attrs...)
-}
 func (l *Logger) Fatal(msg string, attrs ...any) {
 	l.Log(context.TODO(), "fatal", msg, attrs...)
+}
+func (l *Logger) Critical(msg string, attrs ...any) {
+	l.Log(context.TODO(), "critical", msg, attrs...)
 }
 
 // Logs with the provided [level]. As of the current version, this lib does nothing with the passed [context]
