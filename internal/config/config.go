@@ -32,9 +32,12 @@ type Config struct {
 	AppName  string
 	Env      string
 	Timezone string
-	Port     int    `json:"port"`
-	LogLevel string `json:"log_level"`
-	Db       Db
+	Port     int `json:"port"`
+	Log      struct {
+		StreamName string `json:"stream_name"`
+		Level      string `json:"level"`
+	} `json:"log"`
+	Db Db
 	// define the rest of the config as needed
 }
 
@@ -44,7 +47,7 @@ func LoadConfig() (*Config, error) {
 	var db Db
 	var err error
 
-	env := os.Getenv("GO_ENV")
+	env := os.Getenv("APP_ENV")
 	appName := os.Getenv("APP_NAME")
 	paramPaths := buildParamPaths(env, appName)
 

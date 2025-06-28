@@ -13,7 +13,7 @@ func GetLogger(cfg *config.Config, output io.Writer) *yall.Logger {
 	logger, err := yall.NewLogger(&yall.LoggerOptions{
 		AppName: cfg.AppName,
 		Version: "1.0.1",
-		Level:   cfg.LogLevel,
+		Level:   cfg.Log.Level,
 		Output:  output,
 	})
 
@@ -31,7 +31,7 @@ func OutputStream(cfg *config.Config) io.Writer {
 	}
 
 	firehoseLogStream, err := yall.NewFirehoseLogStream(&yall.FirehoseLogStreamOptions{
-		StreamName: cfg.AppName,
+		StreamName: cfg.Log.StreamName,
 	})
 	if err != nil {
 		slog.Info("firehose stream creation error", "err", err)

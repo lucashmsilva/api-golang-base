@@ -1,4 +1,7 @@
 {
   "port": 4431,
-  "log_level": "info"
+    "log": {
+    "stream_name": "stream_name",
+    "level": "info"
+  }
 }
