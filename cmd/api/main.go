@@ -15,12 +15,11 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-/*
-	TODO: implement unit tests for the logging module
-	TODO: learn and implement dependency injection
-	TODO: setup the logger as an injected dependency
-	TODO: create a Docker build pipeline for the dev environment
-*/
+// TODO: implement unit tests and coverage for the main app
+// TODO: implement unit tests for the logging module
+// TODO: learn and implement dependency injection
+// TODO: setup the logger as an injected dependency
+// TODO: implement database configuration
 
 func main() {
 	var isShuttingDown atomic.Bool
@@ -65,6 +64,6 @@ func healthcheckHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(time.Second * 2)
 		// panic(errors.New("hi"))
-		fmt.Fprintln(w, "OK")
+		fmt.Fprintln(w, "mudei")
 	})
 }
