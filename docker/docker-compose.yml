@@ -1,5 +1,15 @@
 name: api-golang-base
 
+x-logging: &default-logging
+    driver: json-file
+    options:
+        max-size: "100k"
+        max-file: "1"
+
+networks:
+    shared-services:
+        external: true
+
 services:
   server:
     container_name: api-golang-base-server
@@ -15,10 +25,7 @@ services:
     ports:
       - 4431:80
     networks:
-      - local-dev
+      - shared-services
+    logging: *default-logging
     restart: always
     command:  sh -c "if [ \"$WATCH_FILES\" == \"1\" ]; then air; else ./bin/main; fi"
-
-networks:
-  local-dev:
-    external: true

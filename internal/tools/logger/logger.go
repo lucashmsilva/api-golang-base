@@ -25,7 +25,7 @@ func GetLogger(cfg *config.Config, output io.Writer) *yall.Logger {
 	return logger
 }
 
-func OutputStream(cfg *config.Config) io.Writer {
+func GetOutputStream(cfg *config.Config) io.Writer {
 	if cfg.Env == "development" {
 		return os.Stdout
 	}

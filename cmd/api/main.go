@@ -28,17 +28,20 @@ func main() {
 	var loggerMdw *middlewares.RequestLoggerMiddleware
 	var errorMdw *middlewares.ErrorMiddleware
 
+	// loads config
 	config, err := config.LoadConfig()
 	if err != nil {
 		slog.Error(fmt.Sprintf("Error loading config: %v", err))
 		return
 	}
 
-	loggerOutputStream = logger.OutputStream(config)
+	// setups a base slog.Logger from the custom logger
+	loggerOutputStream = logger.GetOutputStream(config)
 	slog.SetDefault(logger.GetLogger(config, loggerOutputStream).GetBaseLogger())
 
 	router := chi.NewRouter()
 
+	// middleware setup
 	loggerMdw = middlewares.NewLoggerMiddleware(config, loggerOutputStream)
 	errorMdw = middlewares.NewErrorMiddleware()
 
@@ -48,15 +51,19 @@ func main() {
 	// catch-all for in-request panics
 	router.Use(errorMdw.HandleRequest)
 
+	// app routes
 	router.Handle("GET /healthcheck", healthcheckHandler())
 
+	// starts the HTTP serve
 	srv := server.New(config, router)
 	go srv.Start()
 
+	// waits for shutdown signals
 	srv.GracefulShutdown(&isShuttingDown)
 
-	if outStreamCloser, ok := loggerOutputStream.(io.Closer); ok {
-		outStreamCloser.Close()
+	// checks if the log output is a io.Closer and closes it if so
+	if loggerOutputStreamCloser, ok := loggerOutputStream.(io.Closer); ok {
+		loggerOutputStreamCloser.Close()
 	}
 }
 
@@ -64,6 +71,6 @@ func healthcheckHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(time.Second * 2)
 		// panic(errors.New("hi"))
-		fmt.Fprintln(w, "mudei")
+		fmt.Fprintln(w, "hi")
 	})
 }
