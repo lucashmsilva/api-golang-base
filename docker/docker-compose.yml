@@ -1,0 +1,24 @@
+name: api-golang-base
+
+services:
+  server:
+    container_name: api-golang-base-server
+    image: api-golang-base-server
+    build:
+      context: ../
+      target: build
+      dockerfile: ./docker/Dockerfile
+    env_file:
+      - ./.env
+    volumes:
+      - ../:/app
+    ports:
+      - 4431:80
+    networks:
+      - local-dev
+    restart: always
+    command:  sh -c "if [ \"$WATCH_FILES\" == \"1\" ]; then air; else ./bin/main; fi"
+
+networks:
+  local-dev:
+    external: true
