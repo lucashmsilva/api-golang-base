@@ -12,7 +12,7 @@ import (
 func GetLogger(cfg *config.Config, output io.Writer) *yall.Logger {
 	logger, err := yall.NewLogger(&yall.LoggerOptions{
 		AppName: cfg.AppName,
-		Version: "1.0.1",
+		Version: cfg.Version,
 		Level:   cfg.Log.Level,
 		Output:  output,
 	})

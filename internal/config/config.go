@@ -31,6 +31,7 @@ type Db map[string]DbConnConfig
 type Config struct {
 	AppName  string
 	Env      string
+	Version  string
 	Timezone string
 	Port     int `json:"port"`
 	Log      struct {
@@ -40,6 +41,10 @@ type Config struct {
 	Db Db
 	// define the rest of the config as needed
 }
+
+var (
+	AppVersion string = "undefined"
+)
 
 func LoadConfig() (*Config, error) {
 	var loadedParams LoadedParams
@@ -85,6 +90,7 @@ func LoadConfig() (*Config, error) {
 
 	config.AppName = appName
 	config.Env = env
+	config.Version = AppVersion
 	config.Timezone = timezone
 	config.Db = db
 
