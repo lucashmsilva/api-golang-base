@@ -27,5 +27,6 @@ go.work.sum
 .config.json
 .databases.json
 
+tmp/
 bin/
 .setup

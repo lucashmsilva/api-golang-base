@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 
 go test ../... -v -coverprofile=../.coverage.out
 
-if [ "-c" = $1 ];
+if [ "$1" = "-c" ];
 then
   echo "generating coverage report..."
   go tool cover -html=../.coverage.out -o ../.coverage.html
