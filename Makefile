@@ -1,8 +1,10 @@
-.PHONY: setup build up down start stop restart watch logs login test coverage audit migration
+.PHONY: setup build build-race up down start stop restart watch logs login test coverage audit migration
 setup:
 	echo "#TODO: setup script"
 build:
 	cd docker && docker compose build
+build-race:
+	cd docker && BUILD_WITH_RACE_DETECTION="1" docker compose build
 up: setup
 	cd docker && docker compose up -d
 down: setup

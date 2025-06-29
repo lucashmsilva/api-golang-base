@@ -1,14 +1,14 @@
 name: api-golang-base
 
 x-logging: &default-logging
-    driver: json-file
-    options:
-        max-size: "100k"
-        max-file: "1"
+  driver: json-file
+  options:
+      max-size: "100k"
+      max-file: "1"
 
 networks:
-    shared-services:
-        external: true
+  shared-services:
+      external: true
 
 services:
   server:
@@ -18,6 +18,8 @@ services:
       context: ../
       target: build
       dockerfile: ./docker/Dockerfile
+      args:
+         BUILD_WITH_RACE_DETECTION: $BUILD_WITH_RACE_DETECTION
     env_file:
       - ./.env
     volumes:
@@ -28,4 +30,4 @@ services:
       - shared-services
     logging: *default-logging
     restart: always
-    command:  sh -c "if [ \"$WATCH_FILES\" == \"1\" ]; then air; else ./bin/main; fi"
+    command: sh -c "if [ \"$WATCH_FILES\" = \"1\" ]; then air; else /usr/local/bin/main; fi"
