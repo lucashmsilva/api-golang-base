@@ -42,10 +42,16 @@ func (lm RequestLoggerMiddleware) HandleRequest(next http.Handler) http.Handler 
 		lrw := NewLoggingResponseWriter(w)
 		log := logger.GetLogger(lm.config, lm.loggerOutputStream)
 
-		log.AddLogContext("uuid", uuid.New().String())
+		requestId := r.Header.Get("x-request-id")
+		if requestId == "" {
+			requestId = uuid.New().String()
+		}
+
+		log.AddLogContext("uuid", requestId)
 		log.Info("HTTP Request started", r)
 
-		loggerContext := context.WithValue(r.Context(), util.CtxKey("_reqLogger"), log)
+		requestIdCtx := context.WithValue(r.Context(), util.CtxKey("_requestId"), requestId)
+		loggerContext := context.WithValue(requestIdCtx, util.CtxKey("_reqLogger"), log)
 		context.AfterFunc(loggerContext, func() {
 			resLogData := &yall.HttpResponseLogData{
 				Time:       time.Since(reqStartedAt),
